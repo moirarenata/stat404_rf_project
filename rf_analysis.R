@@ -1,41 +1,36 @@
 library(tidyverse)
 
 data <- read_csv("random_forest_accuracies.csv")
+data$max_depth[is.na(data$max_depth)] <- 0
+
 
 data$Block <- factor(data$Block, levels = c("Split 1 (70/30)", "Split 2 (80/20)", "Split 3 (90/10)"))
 data$n_estimators <- factor(data$n_estimators, levels = c("50", "100", "200"))
-data$max_depth <- factor(data$max_depth, levels = c("None", "1", "10"))
+data$max_depth <- factor(data$max_depth, levels = c("0", "1", "10"))
 
 data_anova <- aov(Accuracy ~ Block + n_estimators + max_depth + 
-                     n_estimators:max_depth, data = data)
+                     n_estimators*max_depth, data = data)
 
 print(summary(data_anova))
 
+## box-cox transformation 
+library(MASS)
+boxcox(Accuracy ~ Block + n_estimators + max_depth, data = data, 
+       lambda = seq(-1, 2, len = 27), ylab = "Log Likelihood")
 
 ## contrasts
 LowVersusHighEstimators <- c(-1, 0, 1)
-LowMidVersusHighEstimators <- c(1, 1, -2)
 NoDepthVersusHighDepth <- c(-1, 0, 1)
-LowDepthVersusHighDepth <- c(1, 1, -2)
+NoDepthVersusMidDepth <- c(-1, 1, 0)
+MidDepthVersusHighDepth <- c(0, -1, 1)
 
-contrast_estimators <- cbind(LowVersusHighEstimators, LowMidVersusHighEstimators)
-contrast_depth <- cbind(NoDepthVersusHighDepth, LowDepthVersusHighDepth)
-
-contrasts(data$n_estimators) <- contrast_estimators
-contrasts(data$max_depth) <- contrast_depth
+contrasts(data$n_estimators) <- cbind(LowVersusHighEstimators)
+contrasts(data$max_depth) <- cbind(NoDepthVersusHighDepth, NoDepthVersusMidDepth)
 
 data_contrasts_anova <- aov(Accuracy ~ Block + n_estimators + max_depth + 
                               n_estimators:max_depth, data = data)
 
 summary(data_contrasts_anova, 
-        split = list(
-          n_estimators = list(
-            LowVersusHighEstimators = 1,
-            LowMidVersusHighEstimators = 2
-          ), 
-          max_depth = list(
-            NoDepthVersusHighDepth = 1, 
-            LowDepthVersusHighDepth = 2
-          )
-        ))
+        split = list(n_estimators = list(LowVersusHighEstimators = 1),
+                     max_depth = list(NoDepthVersusHighDepth = 1, NoDepthVersusMidDepth = 2)))
 
