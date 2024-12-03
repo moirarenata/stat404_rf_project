@@ -5,7 +5,7 @@ data$max_depth[is.na(data$max_depth)] <- 0
 
 
 data$Block <- factor(data$Block, levels = c("Split 1 (70/30)", "Split 2 (80/20)", "Split 3 (90/10)"))
-data$n_estimators <- factor(data$n_estimators, levels = c("50", "100", "200"))
+data$n_estimators <- factor(data$n_estimators, levels = c("5", "100", "500"))
 data$max_depth <- factor(data$max_depth, levels = c("0", "1", "10"))
 
 data_anova <- aov(Accuracy ~ Block + n_estimators + max_depth + 
