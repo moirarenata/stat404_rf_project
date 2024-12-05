@@ -1,4 +1,4 @@
-Block,n_estimators,max_depth,Accuracy
+Splits,n_estimators,max_depth,Accuracy
 Split 1 (70/30),1,,0.7273038907615837
 Split 1 (70/30),1,1,0.789331352720486
 Split 1 (70/30),1,10,0.8030432878173266
