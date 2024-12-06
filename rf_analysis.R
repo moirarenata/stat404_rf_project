@@ -58,19 +58,6 @@ summary(data_contrasts_anova,
         split = list(n_estimators = list(LowVersusHighEstimators = 1, MedVersusHighEstimators = 2),
                      max_depth = list(InfDepthVersusHighDepth = 1, InfDepthVersusMidDepth = 2)))
 
-# # calculate the confidence interval for each effect
-# 
-# df_residual <- 12
-# t_critical <- qt(0.975, df_residual)
-# 
-# ci_table <- data.frame(
-#   Estimate = data_contrasts_anova.coef[, "Estimate"],
-#   Std_Error = data_contrasts_anova.coef[, "Std. Error"],
-#   Lower_CI = data_contrasts_anova.coef[, "Estimate"] - t_critical * data_contrasts_anova.coef[, "Std. Error"],
-#   Upper_CI = data_contrasts_anova.coef[, "Estimate"] + t_critical * data_contrasts_anova.coef[, "Std. Error"]
-# )
-# 
-# print(ci_table)
 
 # calculate the confidence interval of the two most significant contrasts
 data_contrasts_anova.coef <- coef(summary.lm(data_contrasts_anova))
