@@ -9,7 +9,7 @@ data$Splits <- factor(data$Splits, levels = c("Split 1 (70/30)", "Split 2 (80/20
 data$n_estimators <- factor(data$n_estimators, levels = c("1", "100", "500"))
 data$max_depth <- factor(data$max_depth, levels = c("0", "1", "10"))
 
-data_anova <- aov(Accuracy ~ Splits + n_estimators + max_depth + 
+data_anova <- aov(Accuracy^5 ~ Splits + n_estimators + max_depth + 
                      n_estimators*max_depth + n_estimators*Splits + max_depth*Splits, data = data)
 
 # anova table 
@@ -20,9 +20,9 @@ print(summary.lm(data_anova))
 
 ## box-cox transformation 
 library(MASS)
-boxcox(Accuracy ~ Splits + n_estimators + max_depth + n_estimators:max_depth + 
+boxcox((Accuracy)^5 ~ Splits + n_estimators + max_depth + n_estimators:max_depth + 
          n_estimators:Splits + max_depth:Splits, data = data, 
-       lambda = seq(0, 30, len = 50), ylab = "Log Likelihood")
+       lambda = seq(0, 5, len = 50), ylab = "Log Likelihood")
 
 ## diagnostic plot
 plot(data_anova)
@@ -58,17 +58,36 @@ summary(data_contrasts_anova,
         split = list(n_estimators = list(LowVersusHighEstimators = 1, MedVersusHighEstimators = 2),
                      max_depth = list(InfDepthVersusHighDepth = 1, InfDepthVersusMidDepth = 2)))
 
-# calculate the confidence interval for each effect
-model_contrast_coef <- coef(summary.lm(data_contrasts_anova)) 
+# # calculate the confidence interval for each effect
+# 
+# df_residual <- 12
+# t_critical <- qt(0.975, df_residual)
+# 
+# ci_table <- data.frame(
+#   Estimate = data_contrasts_anova.coef[, "Estimate"],
+#   Std_Error = data_contrasts_anova.coef[, "Std. Error"],
+#   Lower_CI = data_contrasts_anova.coef[, "Estimate"] - t_critical * data_contrasts_anova.coef[, "Std. Error"],
+#   Upper_CI = data_contrasts_anova.coef[, "Estimate"] + t_critical * data_contrasts_anova.coef[, "Std. Error"]
+# )
+# 
+# print(ci_table)
 
-df_residual <- 12 # based on the aov table 
-t_critical <- qt(0.975, df_residual)
+# calculate the confidence interval of the two most significant contrasts
+data_contrasts_anova.coef <- coef(summary.lm(data_contrasts_anova))
+df_residual <- 12
 
-ci_table <- data.frame(
-  Estimate = model_contrast_coef[, "Estimate"],
-  Std_Error = model_contrast_coef[, "Std. Error"],
-  Lower_CI = model_contrast_coef[, "Estimate"] - t_critical * model_contrast_coef[, "Std. Error"],
-  Upper_CI = model_contrast_coef[, "Estimate"] + t_critical * model_contrast_coef[, "Std. Error"]
-)
+# n_estimators: LowVersusHighEstimators
+coef.LVHestimators <- data_contrasts_anova.coef[4,1]
+coef.LVHestimators.se <- data_contrasts_anova.coef[4,2]
+lb.LVHestimators <- coef.LVHestimators - qt(0.975,df_residual) * coef.LVHestimators.se
+ub.LVHestimators <- coef.LVHestimators + qt(0.975,df_residual) * coef.LVHestimators.se
 
-print(ci_table)
+sprintf("(%.4f, %.4f)", lb.LVHestimators, ub.LVHestimators)
+
+# max_depth: InfDepthVersusHighDepth
+coef.IVHmaxdepth <- data_contrasts_anova.coef[6,1]
+coef.IVHmaxdepth.se <- data_contrasts_anova.coef[6,2]
+lb.IVHmaxdepth <- coef.IVHmaxdepth - qt(0.975,df_residual) * coef.IVHmaxdepth.se
+ub.IVHmaxdepth <- coef.IVHmaxdepth + qt(0.975,df_residual) * coef.IVHmaxdepth.se
+
+sprintf("(%.4f, %.4f)", lb.IVHmaxdepth, ub.IVHmaxdepth)
