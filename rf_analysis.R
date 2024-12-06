@@ -1,6 +1,6 @@
 library(tidyverse)
 
-data <- read_csv("random_forest_accuracies_new.csv")
+data <- read_csv("random_forest_accuracies.csv")
 data$max_depth[is.na(data$max_depth)] <- 0
 
 
@@ -9,13 +9,18 @@ data$n_estimators <- factor(data$n_estimators, levels = c("1", "100", "500"))
 data$max_depth <- factor(data$max_depth, levels = c("0", "1", "10"))
 
 data_anova <- aov(Accuracy ~ Splits + n_estimators + max_depth + 
-                     n_estimators*max_depth, data = data)
+                     n_estimators*max_depth + n_estimators*Splits + max_depth*Splits, data = data)
 
+# anova table 
 print(summary(data_anova))
+
+# coefficient table 
+print(summary.lm(data_anova))
 
 ## box-cox transformation 
 library(MASS)
-boxcox(Accuracy ~ Splits + n_estimators + max_depth + n_estimators:max_depth, data = data, 
+boxcox(Accuracy ~ Splits + n_estimators + max_depth + n_estimators:max_depth + 
+         n_estimators:Splits + max_depth:Splits, data = data, 
        lambda = seq(0, 30, len = 50), ylab = "Log Likelihood")
 
 ## contrasts
@@ -34,4 +39,11 @@ summary(data_contrasts_anova,
         split = list(n_estimators = list(LowVersusHighEstimators = 1, MedVersusHighEstimators = 2),
                      max_depth = list(InfDepthVersusHighDepth = 1, InfDepthVersusMidDepth = 2)))
 
-# coef(summary.lm(data_contrasts_anova))
+coef(summary.lm(data_contrasts_anova))
+
+library(gmodels)
+fit.contrast(data_contrasts_anova, "n_estimators", t(contrasts(data$n_estimators)))
+fit.contrast(data_contrasts_anova, "max_depth", t(contrasts(data$max_depth)))
+
+
+
