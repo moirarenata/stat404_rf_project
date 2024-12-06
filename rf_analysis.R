@@ -1,5 +1,6 @@
 library(tidyverse)
 library(gmodels)
+library(MASS)
 
 data <- read_csv("random_forest_accuracies.csv")
 data$max_depth[is.na(data$max_depth)] <- 0
@@ -9,7 +10,7 @@ data$Splits <- factor(data$Splits, levels = c("Split 1 (70/30)", "Split 2 (80/20
 data$n_estimators <- factor(data$n_estimators, levels = c("1", "100", "500"))
 data$max_depth <- factor(data$max_depth, levels = c("0", "1", "10"))
 
-data_anova <- aov(Accuracy^5 ~ Splits + n_estimators + max_depth + 
+data_anova <- aov(Accuracy ~ Splits + n_estimators + max_depth + 
                      n_estimators*max_depth + n_estimators*Splits + max_depth*Splits, data = data)
 
 # anova table 
@@ -19,13 +20,12 @@ print(summary(data_anova))
 print(summary.lm(data_anova))
 
 ## box-cox transformation 
-library(MASS)
-boxcox((Accuracy)^5 ~ Splits + n_estimators + max_depth + n_estimators:max_depth + 
+boxcox(Accuracy ~ Splits + n_estimators + max_depth + n_estimators:max_depth + 
          n_estimators:Splits + max_depth:Splits, data = data, 
        lambda = seq(0, 5, len = 50), ylab = "Log Likelihood")
 
 ## diagnostic plot
-plot(data_anova)
+# plot(data_anova)
 
 ## interaction plots
 interaction.plot(data$n_estimators, data$max_depth, data$Accuracy, 
@@ -78,3 +78,16 @@ lb.IVHmaxdepth <- coef.IVHmaxdepth - qt(0.975,df_residual) * coef.IVHmaxdepth.se
 ub.IVHmaxdepth <- coef.IVHmaxdepth + qt(0.975,df_residual) * coef.IVHmaxdepth.se
 
 sprintf("(%.4f, %.4f)", lb.IVHmaxdepth, ub.IVHmaxdepth)
+
+# confidence interval table 
+df_residual <- 12 # based on the aov table 
+t_critical <- qt(0.975, df_residual)
+
+ci_table <- data.frame(
+  Estimate = data_contrasts_anova.coef[, "Estimate"],
+  Std_Error = data_contrasts_anova.coef[, "Std. Error"],
+  Lower_CI = data_contrasts_anova.coef[, "Estimate"] - t_critical * data_contrasts_anova.coef[, "Std. Error"],
+  Upper_CI = data_contrasts_anova.coef[, "Estimate"] + t_critical * data_contrasts_anova.coef[, "Std. Error"]
+)
+
+print(ci_table)
